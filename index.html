@@ -83,6 +83,8 @@
   .readout{font-size:44px;font-weight:900;line-height:1.55;}
   .readout .num{font-family:"Orbitron",sans-serif;}
 
+  .rbtn{border:2px solid var(--panel-bd);background:#14233a;color:var(--ink);border-radius:18px;padding:10px 24px;font-family:"Orbitron",sans-serif;font-size:34px;font-weight:900;}
+  .rbtn.on{background:rgba(255,122,182,.2);border-color:var(--R);color:var(--R);}
   /* ---- ブリ三角 ---- */
   .tri-wrap{position:relative;width:620px;height:540px;flex:none;}
   .tri-letter{position:absolute;border:none;background:none;font-family:"Orbitron",sans-serif;font-weight:900;font-size:150px;line-height:1;width:200px;height:170px;border-radius:30px;transition:background .2s,opacity .2s;}
@@ -289,6 +291,42 @@
   <div class="card step">
     <p><span class="cR">抵抗</span>を <b class="big">2倍</b> にすると → <span class="cI">電流</span>は <b class="big mark">半分</b> ⬇</p>
     <p class="sub" style="font-size:36px;">💧 パイプを細くすると、水が流れにくくなる</p>
+  </div>
+  <p class="step big" style="text-align:center;margin-top:30px;">👉 これって数学の <span class="mark">「比例」</span>！？</p>
+</section>
+
+<!-- 10 比例とつなげる -->
+<section class="slide" data-title="比例とつなげる">
+  <span class="tag">MATH × SCIENCE</span>
+  <h2 style="margin:10px 0 14px;">数学の「比例」とつなげよう 📈</h2>
+  <div class="row" style="gap:44px;align-items:flex-start;">
+    <div class="col" style="flex:1;">
+      <svg id="graph" viewBox="0 0 660 490" style="width:100%;height:auto;display:block;">
+        <g id="gGrid"></g>
+        <line x1="90" y1="400" x2="630" y2="400" stroke="#eaf6ff" stroke-width="4"/>
+        <line x1="90" y1="400" x2="90" y2="30" stroke="#eaf6ff" stroke-width="4"/>
+        <text x="630" y="484" text-anchor="end" font-size="32" font-weight="900" fill="#27e0ff">電流 I [A] → x</text>
+        <text x="100" y="26" font-size="32" font-weight="900" fill="#ffd23a">↑ 電圧 V [V]　y</text>
+        <text x="80" y="432" text-anchor="end" font-size="26" fill="#9fb6cc" font-family="Orbitron">0</text>
+        <g id="gLine"></g>
+      </svg>
+      <div style="display:flex;gap:16px;align-items:center;margin-top:10px;">
+        <span style="font-size:36px;font-weight:900;" class="cR">抵抗 R</span>
+        <button class="rbtn" data-r="2">2Ω</button><button class="rbtn" data-r="3">3Ω</button><button class="rbtn" data-r="5">5Ω</button>
+      </div>
+    </div>
+    <div class="col" style="flex:1;">
+      <div class="card step" style="margin-bottom:16px;padding:18px 28px;">
+        <p style="font-size:34px;"><span class="cR">抵抗R</span>が同じなら<br><span class="cI">電流</span>が2倍・3倍 → <span class="cV">電圧</span>も2倍・3倍<br>グラフは<span class="mark">原点を通る直線</span></p>
+      </div>
+      <div class="card step" style="margin-bottom:16px;padding:14px 28px;text-align:center;">
+        <p style="font-family:Orbitron;font-weight:900;font-size:64px;line-height:1.2;">y = a x</p>
+        <p style="font-size:44px;line-height:1;">⬇</p>
+        <p style="font-family:Orbitron;font-weight:900;font-size:64px;line-height:1.2;"><span class="cV">V</span> = <span class="cR">R</span> <span class="cI">I</span></p>
+        <p style="font-size:32px;" class="sub"><span class="cV">y＝電圧</span>　<span class="cR">a＝抵抗（比例定数）</span>　<span class="cI">x＝電流</span></p>
+      </div>
+      <p class="step" style="font-size:36px;">抵抗が大きいほど <span class="mark">傾きが急</span>！</p>
+    </div>
   </div>
 </section>
 
@@ -539,6 +577,29 @@
     requestAnimationFrame(loop);
   })(last);
   circ();
+
+  /* ---- 比例グラフ（x＝電流I、y＝電圧V、傾き＝抵抗R） ---- */
+  const GX=90, GY=400, SX=125, SY=17;          // 1A＝125px、1V＝17px
+  const px = I => GX+I*SX, py = V => GY-V*SY;
+  let grid='';
+  for(let i=1;i<=4;i++) grid += `<line x1="${px(i)}" y1="${GY}" x2="${px(i)}" y2="${py(20)}" stroke="#1e2f47" stroke-width="2"/><text x="${px(i)}" y="${GY+34}" text-anchor="middle" font-size="26" fill="#9fb6cc" font-family="Orbitron">${i}</text>`;
+  for(let v=5;v<=20;v+=5) grid += `<line x1="${GX}" y1="${py(v)}" x2="${px(4)}" y2="${py(v)}" stroke="#1e2f47" stroke-width="2"/><text x="${GX-12}" y="${py(v)+9}" text-anchor="end" font-size="26" fill="#9fb6cc" font-family="Orbitron">${v}</text>`;
+  $('#gGrid').innerHTML = grid;
+  function drawGraph(R){
+    const Iend = Math.min(4, 20/R);
+    let g = `<line x1="${px(0)}" y1="${py(0)}" x2="${px(Iend)}" y2="${py(R*Iend)}" stroke="#ff7ab6" stroke-width="7" stroke-linecap="round"/>`;
+    for(let I=1;I<=3;I++){ const V=R*I; if(V>20) break;
+      g += `<line x1="${px(I)}" y1="${GY}" x2="${px(I)}" y2="${py(V)}" stroke="#27e0ff" stroke-width="3" stroke-dasharray="6 6"/>`
+         + `<line x1="${GX}" y1="${py(V)}" x2="${px(I)}" y2="${py(V)}" stroke="#ffd23a" stroke-width="3" stroke-dasharray="6 6"/>`
+         + `<circle cx="${px(I)}" cy="${py(V)}" r="11" fill="#ffd23a" stroke="#05090f" stroke-width="3"/>`
+         + `<text x="${px(I)+16}" y="${py(V)+10}" font-size="28" font-weight="900" fill="#ffd23a" font-family="Orbitron">${V}V</text>`;
+    }
+    g += `<text x="${px(Iend)-10}" y="${py(R*Iend)-18}" text-anchor="end" font-size="34" font-weight="900" fill="#ff7ab6">V = ${R} × I</text>`;
+    $('#gLine').innerHTML = g;
+    document.querySelectorAll('.rbtn').forEach(b => b.classList.toggle('on', +b.dataset.r===R));
+  }
+  document.querySelectorAll('.rbtn').forEach(b => b.onclick = () => drawGraph(+b.dataset.r));
+  drawGraph(3);
 
   /* ---- ブリ三角 ---- */
   const tri = {
