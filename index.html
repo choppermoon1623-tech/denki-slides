@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>電気のきほん スライド</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#05090f; --panel:#0d1726; --panel-bd:rgba(120,200,255,.18);
+    --ink:#eaf6ff; --sub:#9fb6cc;
+    --flow:#27e0ff; --flowLite:#a6f3ff;
+    --yellow:#ffd23a; --pink:#ff7ab6; --green:#9be15d; --red:#ff5a5a;
+    --I:#27e0ff; --V:#ffd23a; --R:#ff7ab6; --P:#9be15d;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;background:var(--bg);color:var(--ink);overflow:hidden;}
+  body{font-family:"Zen Maru Gothic","BIZ UDGothic","Hiragino Maru Gothic ProN",system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+  button{font-family:inherit;cursor:pointer;}
+
+  /* ---- stage: 1600x900 を画面に合わせて拡大縮小 ---- */
+  #viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+  #stage{width:1600px;height:900px;position:relative;flex:none;transform-origin:center center;}
+  .slide{position:absolute;inset:0;padding:64px 88px 80px;display:flex;flex-direction:column;
+    background:radial-gradient(1200px 700px at 85% -10%,rgba(39,224,255,.13),transparent 60%),
+               radial-gradient(900px 600px at -10% 110%,rgba(86,132,255,.14),transparent 60%),var(--bg);
+    opacity:0;visibility:hidden;transition:opacity .45s ease,visibility .45s;}
+  .slide.active{opacity:1;visibility:visible;}
+  .slide.active .pop{animation:pop .6s cubic-bezier(.2,1.4,.4,1) both;}
+  .slide.active .pop:nth-child(2){animation-delay:.08s}
+  .slide.active .pop:nth-child(3){animation-delay:.16s}
+  .slide.active .pop:nth-child(4){animation-delay:.24s}
+  @keyframes pop{from{opacity:0;transform:translateY(26px) scale(.96)}to{opacity:1;transform:none}}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  @keyframes shine{to{background-position:220% center}}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+  @media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important;}}
+
+  /* ---- typography: 教室の後ろからでも読める大きさ ---- */
+  .tag{font-family:"Orbitron",sans-serif;font-weight:700;font-size:22px;letter-spacing:.24em;color:var(--flow);
+    display:inline-block;border:2px solid rgba(39,224,255,.35);background:rgba(39,224,255,.1);padding:6px 18px;border-radius:999px;align-self:flex-start;}
+  h1{font-size:128px;font-weight:900;line-height:1.1;}
+  h2{font-size:72px;font-weight:900;line-height:1.2;margin:14px 0 26px;}
+  p,li{font-size:44px;font-weight:700;line-height:1.5;}
+  .sub{color:var(--sub);}
+  .big{font-size:56px;}
+  .grad{background:linear-gradient(100deg,#a6f3ff,#27e0ff 35%,#7aa8ff 70%,#a6f3ff);background-size:220% auto;
+    -webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 6s linear infinite;}
+  .cI{color:var(--I)} .cV{color:var(--V)} .cR{color:var(--R)} .cP{color:var(--P)}
+  .mark{background:linear-gradient(transparent 60%,rgba(255,210,58,.45) 60%);padding:0 4px;}
+
+  .row{display:flex;gap:48px;align-items:center;flex:1;min-height:0;}
+  .col{flex:1;min-width:0;}
+  .illus{border-radius:32px;overflow:hidden;border:2px solid var(--panel-bd);box-shadow:0 24px 60px rgba(0,0,0,.55);}
+  .illus img{display:block;width:100%;height:auto;}
+  .card{background:var(--panel);border:2px solid var(--panel-bd);border-radius:32px;padding:30px 36px;}
+
+  /* 単位バッジ */
+  .unit{display:inline-flex;align-items:center;gap:14px;font-size:40px;font-weight:900;padding:8px 26px;border-radius:999px;margin-bottom:22px;}
+  .unit b{font-family:"Orbitron",sans-serif;font-size:44px;}
+
+  /* 順番に出すパーツ */
+  .step{opacity:0;transform:translateY(18px);transition:opacity .4s,transform .4s;}
+  .step.shown{opacity:1;transform:none;}
+
+  /* ---- UI ---- */
+  #ui{position:fixed;left:0;right:0;bottom:0;height:6px;background:rgba(255,255,255,.06);z-index:10;}
+  #bar{height:100%;width:0;background:linear-gradient(90deg,var(--flow),#7aa8ff);transition:width .4s;}
+  .nav{position:fixed;bottom:18px;z-index:11;border:none;width:56px;height:56px;border-radius:50%;
+    background:rgba(255,255,255,.08);color:var(--ink);font-size:26px;font-weight:900;opacity:.55;transition:opacity .2s;}
+  .nav:hover{opacity:1;}
+  #prev{right:156px} #next{right:88px} #fs{right:20px;font-size:22px;}
+  #count{position:fixed;left:24px;bottom:22px;z-index:11;font-family:"Orbitron",sans-serif;font-size:18px;color:var(--sub);letter-spacing:.1em;}
+
+  /* ---- 回路実験 ---- */
+  .ctrl{display:flex;align-items:center;gap:18px;margin-bottom:22px;}
+  .ctrl .lab{font-size:40px;font-weight:900;width:200px;}
+  .ctrl button{width:76px;height:76px;border-radius:22px;border:2px solid var(--panel-bd);background:#14233a;color:var(--ink);font-size:48px;font-weight:900;line-height:1;}
+  .ctrl button:active{transform:scale(.92);}
+  .ctrl .val{font-family:"Orbitron",sans-serif;font-size:60px;font-weight:900;min-width:190px;text-align:center;}
+  .readout{font-size:44px;font-weight:900;line-height:1.55;}
+  .readout .num{font-family:"Orbitron",sans-serif;}
+
+  /* ---- ブリ三角 ---- */
+  .tri-wrap{position:relative;width:620px;height:540px;flex:none;}
+  .tri-letter{position:absolute;border:none;background:none;font-family:"Orbitron",sans-serif;font-weight:900;font-size:150px;line-height:1;width:200px;height:170px;border-radius:30px;transition:background .2s,opacity .2s;}
+  .tri-letter:hover{background:rgba(255,255,255,.06);}
+  .tri-letter.hidden{opacity:.12;}
+  .tri-letter.hidden::after{content:"✋";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:120px;opacity:1;}
+  #triAns{font-size:84px;font-weight:900;font-family:"Orbitron","Zen Maru Gothic",sans-serif;min-height:120px;}
+
+  /* ---- 練習・クイズ ---- */
+  .q{display:flex;align-items:center;gap:28px;padding:22px 32px;margin-bottom:22px;}
+  .q .qn{font-family:"Orbitron",sans-serif;font-size:40px;font-weight:900;color:var(--flow);flex:none;}
+  .q p{flex:1;}
+  .reveal{border:none;border-radius:20px;padding:14px 26px;font-size:36px;font-weight:900;background:#1d3350;color:var(--flowLite);min-width:280px;}
+  .reveal.open{background:rgba(155,225,93,.16);color:var(--green);}
+  .opts{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:26px;}
+  .opt{border:2px solid var(--panel-bd);background:var(--panel);color:var(--ink);border-radius:26px;padding:24px 30px;font-size:44px;font-weight:900;text-align:left;}
+  .opt.ok{background:rgba(155,225,93,.2);border-color:var(--green);}
+  .opt.ng{background:rgba(255,90,90,.16);border-color:var(--red);opacity:.7;}
+  .explain{margin-top:26px;font-size:40px;min-height:64px;color:var(--green);}
+  .qdots{display:flex;gap:14px;margin-left:auto;}
+  .qdots button{width:64px;height:64px;border-radius:50%;border:2px solid var(--panel-bd);background:var(--panel);color:var(--ink);font-family:"Orbitron",sans-serif;font-size:26px;font-weight:900;}
+  .qdots button.on{background:var(--flow);color:#06121a;}
+
+  /* ---- 家電の電力 ---- */
+  .bars{display:flex;flex-direction:column;gap:16px;}
+  .bar{display:grid;grid-template-columns:300px 1fr 170px;align-items:center;gap:18px;font-size:38px;font-weight:900;}
+  .bar .track{height:44px;background:rgba(255,255,255,.06);border-radius:12px;overflow:hidden;}
+  .bar .fill{height:100%;width:0;border-radius:12px;background:linear-gradient(90deg,#9be15d,#ffd23a);transition:width 1s cubic-bezier(.2,.8,.2,1);}
+  .bar .w{font-family:"Orbitron",sans-serif;font-size:34px;text-align:right;}
+
+  /* ---- タップ ---- */
+  .apps{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  .app{border:3px solid var(--panel-bd);background:var(--panel);color:var(--ink);border-radius:24px;padding:14px 22px;font-size:34px;white-space:nowrap;gap:10px;font-weight:900;text-align:left;display:flex;justify-content:space-between;align-items:center;}
+  .app small{font-family:"Orbitron",sans-serif;font-size:26px;color:var(--sub);}
+  .app.on{border-color:var(--yellow);background:rgba(255,210,58,.14);}
+  .meter{height:52px;border-radius:16px;background:rgba(255,255,255,.07);overflow:hidden;position:relative;margin:16px 0 8px;}
+  .meter .fill{height:100%;width:0;background:var(--green);transition:width .4s,background .4s;}
+  .meter .limit{position:absolute;top:-6px;bottom:-6px;width:6px;background:var(--ink);border-radius:3px;}
+  .danger{color:var(--red);animation:blink .8s infinite;}
+
+  /* ---- 表 ---- */
+  table.map{border-collapse:separate;border-spacing:0 12px;width:100%;}
+  table.map td{font-size:44px;font-weight:900;padding:12px 28px;background:var(--panel);}
+  table.map td:first-child{border-radius:24px 0 0 24px;}
+  table.map td:last-child{border-radius:0 24px 24px 0;}
+  table.map td.arrow{color:var(--sub);text-align:center;width:90px;}
+</style>
+</head>
+<body>
+<div id="viewport"><div id="stage">
+
+<!-- 01 タイトル -->
+<section class="slide" data-title="タイトル">
+  <div class="row" style="gap:40px;">
+    <div class="col" style="flex:.9;">
+      <span class="tag pop">ELECTRICITY × WATER</span>
+      <p class="sub pop" style="font-size:28px;margin-top:26px;">技術・家庭科〔技術分野〕<br>エネルギー変換の技術</p>
+      <h1 class="pop" style="margin:18px 0 26px;"><span style="display:inline-block;animation:float 3s ease-in-out infinite;">⚡</span><span class="grad">電気の<br>きほん</span></h1>
+      <p class="pop" style="font-size:48px;">見えない電気を<br><span class="cI">水の流れ</span>で<br>イメージしよう！</p>
+    </div>
+    <div class="col illus pop" style="flex:1.1;"><img src="img/hero.jpg" alt="電池と電球の回路と、水路と水車が重なったイラスト"></div>
+  </div>
+</section>
+
+<!-- 02 ゴール -->
+<section class="slide" data-title="きょうのゴール">
+  <span class="tag">GOAL</span>
+  <h2>きょうのゴール 🎯</h2>
+  <div class="card step" style="margin-bottom:26px;"><p>① <span class="cI">電流</span>・<span class="cV">電圧</span>・<span class="cR">抵抗</span> を<span class="mark">水</span>でイメージできる</p></div>
+  <div class="card step" style="margin-bottom:26px;"><p>② <span class="mark">オームの法則</span> で電流・電圧・抵抗を計算できる</p></div>
+  <div class="card step"><p>③ <span class="cP">電力</span> がわかり、家の電気を<span class="mark">安全に</span>使える</p></div>
+</section>
+
+<!-- 03 水でたとえる -->
+<section class="slide" data-title="水でたとえる">
+  <span class="tag">IMAGE</span>
+  <h2>見えない電気を<span class="cI">水</span>でたとえよう！</h2>
+  <table class="map">
+    <tr class="step"><td>🔋 電池</td><td class="arrow">＝</td><td>⛽ ポンプ（水を高く持ち上げる）</td></tr>
+    <tr class="step"><td>〰 電線</td><td class="arrow">＝</td><td>🚰 水路・パイプ</td></tr>
+    <tr class="step"><td>💡 電球</td><td class="arrow">＝</td><td>🎡 水車（流れで仕事をする）</td></tr>
+    <tr class="step"><td>⚡ 電気の流れ</td><td class="arrow">＝</td><td>💧 水の流れ</td></tr>
+  </table>
+  <p class="step sub" style="margin-top:14px;">水も電気も、<span class="mark" style="color:var(--ink);">ぐるっと一周</span>できる道（回路）がないと流れない！</p>
+</section>
+
+<!-- 04 電流 -->
+<section class="slide" data-title="電流">
+  <span class="tag">WORD 1</span>
+  <div class="row">
+    <div class="col" style="flex:.85;">
+      <div class="unit" style="background:rgba(39,224,255,.14);color:var(--I);">記号 <b>I</b>　単位 <b>A</b>（アンペア）</div>
+      <h2 style="font-size:96px;margin:0 0 20px;" class="cI">電流</h2>
+      <p class="big">電気の<span class="mark">流れる量</span></p>
+      <p class="sub step" style="margin-top:26px;">💧 水なら…<br>1秒間に流れる<b style="color:var(--ink);">水の量</b></p>
+    </div>
+    <div class="col illus"><img src="img/current.jpg" alt="たくさん流れる水路と少ししか流れない水路の比較"></div>
+  </div>
+</section>
+
+<!-- 05 電圧 -->
+<section class="slide" data-title="電圧">
+  <span class="tag">WORD 2</span>
+  <div class="row">
+    <div class="col" style="flex:.85;">
+      <div class="unit" style="background:rgba(255,210,58,.14);color:var(--V);">記号 <b>V</b>　単位 <b>V</b>（ボルト）</div>
+      <h2 style="font-size:96px;margin:0 0 20px;" class="cV">電圧</h2>
+      <p class="big">電気を<span class="mark">押し出す力</span></p>
+      <p class="sub step" style="margin-top:26px;">💧 水なら…<br><b style="color:var(--ink);">高さ（落差）</b>。高いほど勢いが強い！</p>
+    </div>
+    <div class="col illus"><img src="img/voltage.jpg" alt="低いタンクと高いタンクから落ちる水の勢いの比較"></div>
+  </div>
+</section>
+
+<!-- 06 抵抗 -->
+<section class="slide" data-title="抵抗">
+  <span class="tag">WORD 3</span>
+  <div class="row">
+    <div class="col" style="flex:.85;">
+      <div class="unit" style="background:rgba(255,122,182,.14);color:var(--R);">記号 <b>R</b>　単位 <b>Ω</b>（オーム）</div>
+      <h2 style="font-size:96px;margin:0 0 20px;" class="cR">抵抗</h2>
+      <p class="big">電気の<span class="mark">流れにくさ</span></p>
+      <p class="sub step" style="margin-top:26px;">💧 水なら…<br><b style="color:var(--ink);">細いパイプ</b>や重い水車</p>
+    </div>
+    <div class="col illus"><img src="img/resistance.jpg" alt="太いパイプと細いパイプの水の流れやすさの比較"></div>
+  </div>
+</section>
+
+<!-- 07 3つのことば -->
+<section class="slide" data-title="3つのことば">
+  <span class="tag">CHECK</span>
+  <h2>3つのことばを整理しよう</h2>
+  <div class="row" style="align-items:stretch;gap:32px;">
+    <div class="col card pop" style="border-color:rgba(39,224,255,.5);text-align:center;">
+      <p style="font-size:120px;font-family:Orbitron;" class="cI">I</p>
+      <p class="big cI">電流 [A]</p><p>流れる<b class="mark">量</b></p><p class="sub" style="margin-top:14px;">💧水の量</p>
+    </div>
+    <div class="col card pop" style="border-color:rgba(255,210,58,.5);text-align:center;">
+      <p style="font-size:120px;font-family:Orbitron;" class="cV">V</p>
+      <p class="big cV">電圧 [V]</p><p>押し出す<b class="mark">力</b></p><p class="sub" style="margin-top:14px;">💧水の高さ</p>
+    </div>
+    <div class="col card pop" style="border-color:rgba(255,122,182,.5);text-align:center;">
+      <p style="font-size:120px;font-family:Orbitron;" class="cR">R</p>
+      <p class="big cR">抵抗 [Ω]</p><p><b class="mark">流れにくさ</b></p><p class="sub" style="margin-top:14px;">💧細いパイプ</p>
+    </div>
+  </div>
+</section>
+
+<!-- 08 回路実験 -->
+<section class="slide" data-title="回路で実験">
+  <span class="tag">EXPERIMENT</span>
+  <h2 style="margin-bottom:10px;">実験！電圧と抵抗を変えると…？</h2>
+  <div class="row" style="gap:40px;">
+    <div class="col" style="flex:1.05;">
+      <svg id="circ" viewBox="0 0 760 520" style="width:100%;height:auto;display:block;">
+        <defs>
+          <filter id="glowF" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="10"/></filter>
+        </defs>
+        <rect x="90" y="70" width="580" height="370" rx="36" fill="none" stroke="#2a3f5c" stroke-width="16"/>
+        <rect id="flowPath" x="90" y="70" width="580" height="370" rx="36" fill="none" stroke="#27e0ff" stroke-width="10" stroke-linecap="round" stroke-dasharray="4 38"/>
+        <!-- 電池 -->
+        <g transform="translate(90 255)">
+          <rect x="-48" y="-80" width="96" height="160" rx="18" fill="#ff5f8f" stroke="#0a1424" stroke-width="6"/>
+          <rect x="-18" y="-100" width="36" height="22" rx="6" fill="#c9d6e6"/>
+          <text x="0" y="-30" text-anchor="middle" font-size="44" font-weight="900" fill="#fff">＋</text>
+          <text id="batV" x="0" y="42" text-anchor="middle" font-size="38" font-weight="900" fill="#fff" font-family="Orbitron">6V</text>
+        </g>
+        <!-- 抵抗 -->
+        <g transform="translate(380 440)">
+          <rect x="-110" y="-38" width="220" height="76" rx="14" fill="#0a1424" stroke="#ff7ab6" stroke-width="6"/>
+          <path id="zig" d="M-90 0" fill="none" stroke="#ff7ab6" stroke-width="7" stroke-linejoin="round"/>
+          <text id="resR" x="0" y="-62" text-anchor="middle" font-size="40" font-weight="900" fill="#ff7ab6" font-family="Orbitron">3Ω</text>
+        </g>
+        <!-- 電球 -->
+        <g transform="translate(670 255)">
+          <circle id="bulbGlow" r="80" fill="#ffd23a" opacity=".5" filter="url(#glowF)"/>
+          <circle id="bulb" r="56" fill="#ffd23a" stroke="#0a1424" stroke-width="6"/>
+          <path d="M-16 8 q8 -26 16 0 q8 -26 16 0" fill="none" stroke="#7a5200" stroke-width="5"/>
+          <rect x="-26" y="52" width="52" height="30" rx="6" fill="#9aabc0"/>
+        </g>
+        <text x="380" y="46" text-anchor="middle" font-size="30" font-weight="900" fill="#a6f3ff">→ 電流の流れ →</text>
+      </svg>
+    </div>
+    <div class="col" style="flex:.95;">
+      <div class="ctrl"><span class="lab cV">電圧 V</span><button data-k="V" data-d="-1" aria-label="電圧を下げる">−</button><span class="val cV" id="vOut">6V</span><button data-k="V" data-d="1" aria-label="電圧を上げる">＋</button></div>
+      <div class="ctrl"><span class="lab cR">抵抗 R</span><button data-k="R" data-d="-1" aria-label="抵抗を下げる">−</button><span class="val cR" id="rOut">3Ω</span><button data-k="R" data-d="1" aria-label="抵抗を上げる">＋</button></div>
+      <div class="card readout" style="margin-top:10px;">
+        <div><span class="cI">電流 I</span> ＝ <span class="num" id="iOut">2</span> A</div>
+        <div class="sub" style="font-size:36px;" id="iCalc">＝ 6 ÷ 3</div>
+        <div style="margin-top:6px;"><span class="cP">電力 P</span> ＝ <span class="num" id="pOut">12</span> W</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 09 きまりを発見 -->
+<section class="slide" data-title="きまりを発見">
+  <span class="tag">DISCOVER</span>
+  <h2>実験からわかった「きまり」</h2>
+  <div class="card step" style="margin-bottom:28px;">
+    <p><span class="cV">電圧</span>を <b class="big">2倍</b> にすると → <span class="cI">電流</span>も <b class="big mark">2倍</b> ⬆⬆</p>
+    <p class="sub" style="font-size:36px;">💧 タンクを高くすると、水がたくさん流れる</p>
+  </div>
+  <div class="card step">
+    <p><span class="cR">抵抗</span>を <b class="big">2倍</b> にすると → <span class="cI">電流</span>は <b class="big mark">半分</b> ⬇</p>
+    <p class="sub" style="font-size:36px;">💧 パイプを細くすると、水が流れにくくなる</p>
+  </div>
+</section>
+
+<!-- 10 オームの法則 -->
+<section class="slide" data-title="オームの法則">
+  <span class="tag">OHM'S LAW</span>
+  <h2>これが <span class="grad">オームの法則</span>！</h2>
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:34px;">
+    <div class="pop" style="font-family:Orbitron;font-weight:900;font-size:180px;line-height:1;">
+      <span class="cV">V</span> = <span class="cI">I</span> × <span class="cR">R</span>
+    </div>
+    <p class="pop big" style="text-align:center;"><span class="cV">電圧</span> ＝ <span class="cI">電流</span> × <span class="cR">抵抗</span></p>
+    <p class="step sub" style="text-align:center;">1827年、ドイツの科学者<b style="color:var(--ink);">オーム</b>が発見 → 抵抗の単位「Ω」の由来</p>
+  </div>
+</section>
+
+<!-- 11 ブリ三角 -->
+<section class="slide" data-title="ブリの三角">
+  <span class="tag">TRICK</span>
+  <h2>おぼえ方は「ブリ」🐟</h2>
+  <div class="row" style="gap:60px;">
+    <div class="tri-wrap">
+      <svg viewBox="0 0 620 540" style="position:absolute;inset:0;width:100%;height:100%;">
+        <path d="M310 20 L600 520 L20 520 Z" fill="#0d1726" stroke="#27e0ff" stroke-width="8" stroke-linejoin="round"/>
+        <line x1="150" y1="290" x2="470" y2="290" stroke="#27e0ff" stroke-width="8"/>
+        <line x1="310" y1="290" x2="310" y2="520" stroke="#27e0ff" stroke-width="8"/>
+        <text x="310" y="440" text-anchor="middle" font-size="70" font-weight="900" fill="#9fb6cc">×</text>
+      </svg>
+      <button class="tri-letter cV" data-t="V" style="left:210px;top:110px;">V</button>
+      <button class="tri-letter cI" data-t="I" style="left:110px;top:325px;">I</button>
+      <button class="tri-letter cR" data-t="R" style="left:310px;top:325px;">R</button>
+    </div>
+    <div class="col">
+      <p class="big">求めたい文字を<span class="mark">かくす</span>！</p>
+      <p class="sub" style="font-size:36px;">👆 V・I・R をタップ</p>
+      <div id="triAns"></div>
+      <p id="triWord" class="big" style="margin-top:10px;"></p>
+      <p class="sub" style="margin-top:34px;font-size:36px;">上下にならぶ → 「÷」<br>横にならぶ → 「×」</p>
+    </div>
+  </div>
+</section>
+
+<!-- 12 練習問題 -->
+<section class="slide" data-title="練習問題">
+  <span class="tag">PRACTICE</span>
+  <h2>計算してみよう ✏️</h2>
+  <div class="card q"><span class="qn">Q1</span><p>電圧 <span class="cV">6V</span>、抵抗 <span class="cR">3Ω</span>。電流 <span class="cI">I</span> は？</p><button class="reveal" data-a="6 ÷ 3 ＝ 2A">こたえ</button></div>
+  <div class="card q"><span class="qn">Q2</span><p>電流 <span class="cI">0.5A</span>、抵抗 <span class="cR">20Ω</span>。電圧 <span class="cV">V</span> は？</p><button class="reveal" data-a="0.5 × 20 ＝ 10V">こたえ</button></div>
+  <div class="card q"><span class="qn">Q3</span><p>電圧 <span class="cV">100V</span>、電流 <span class="cI">2A</span>。抵抗 <span class="cR">R</span> は？</p><button class="reveal" data-a="100 ÷ 2 ＝ 50Ω">こたえ</button></div>
+</section>
+
+<!-- 13 電力 -->
+<section class="slide" data-title="電力">
+  <span class="tag">POWER</span>
+  <div class="row">
+    <div class="col" style="flex:.9;">
+      <div class="unit" style="background:rgba(155,225,93,.14);color:var(--P);">記号 <b>P</b>　単位 <b>W</b>（ワット）</div>
+      <h2 style="font-size:96px;margin:0 0 16px;" class="cP">電力</h2>
+      <p class="big">電気が1秒間にする<span class="mark">仕事の大きさ</span></p>
+      <div class="card step" style="margin-top:28px;text-align:center;">
+        <p style="font-family:Orbitron;font-size:96px;font-weight:900;line-height:1.2;"><span class="cP">P</span> = <span class="cV">V</span> × <span class="cI">I</span></p>
+        <p style="font-size:38px;"><span class="cP">電力</span>＝<span class="cV">電圧</span>×<span class="cI">電流</span></p>
+      </div>
+    </div>
+    <div class="col illus"><img src="img/power.jpg" alt="水車を回す水の力と、光る電球・回る扇風機"></div>
+  </div>
+</section>
+
+<!-- 14 電力のイメージ -->
+<section class="slide" data-title="電力のイメージ">
+  <span class="tag">POWER</span>
+  <h2>💧 水車でイメージすると…</h2>
+  <div class="row" style="align-items:stretch;gap:36px;">
+    <div class="col card step" style="text-align:center;display:flex;flex-direction:column;justify-content:center;">
+      <p style="font-size:110px;">⛰️💧</p>
+      <p style="font-size:42px;"><span class="cV">高いところ</span>から</p>
+      <p class="sub" style="font-size:32px;">勢いのある水（電圧↑）</p>
+    </div>
+    <div class="col card step" style="text-align:center;display:flex;flex-direction:column;justify-content:center;">
+      <p style="font-size:110px;">🌊🌊</p>
+      <p style="font-size:42px;"><span class="cI">たくさん</span>の水が</p>
+      <p class="sub" style="font-size:32px;">流れる（電流↑）</p>
+    </div>
+    <div class="col card step" style="text-align:center;display:flex;flex-direction:column;justify-content:center;border-color:rgba(155,225,93,.6);">
+      <p style="font-size:110px;">🎡💪</p>
+      <p style="font-size:42px;">水車が<span class="cP">パワフル</span>に</p>
+      <p class="sub" style="font-size:32px;">回る（電力↑）</p>
+    </div>
+  </div>
+  <p class="step" style="text-align:center;margin-top:26px;">例：<span class="cV">100V</span> × <span class="cI">12A</span> ＝ <span class="cP mark">1200W</span>（ドライヤー）</p>
+</section>
+
+<!-- 15 身近な家電 -->
+<section class="slide" data-title="身近な家電のW">
+  <span class="tag">AT HOME</span>
+  <h2>家電の電力をくらべてみよう 🏠</h2>
+  <div class="row" style="gap:40px;align-items:center;">
+    <div class="col illus" style="flex:.75;"><img src="img/home.jpg" alt="棚に並んだ家電製品のイラスト"></div>
+    <div class="col bars" id="bars" style="flex:1.25;"></div>
+  </div>
+  <p class="sub" style="font-size:30px;margin-top:14px;">※ 数値はおよその目安。本物は製品の「定格消費電力」を見てみよう</p>
+</section>
+
+<!-- 16 テーブルタップ -->
+<section class="slide" data-title="テーブルタップ">
+  <span class="tag">SAFETY</span>
+  <h2 style="margin:10px 0 14px;">タコ足配線は危ない！なぜ？ 🔌</h2>
+  <div class="row" style="gap:40px;align-items:flex-start;">
+    <div class="col" style="flex:.8;">
+      <div class="illus"><img src="img/tap.jpg" alt="テーブルタップにたくさんのプラグが差し込まれ熱くなっているイラスト"></div>
+      <p style="font-size:36px;margin-top:18px;">テーブルタップの上限：<br><span class="cV">100V</span> × <span class="cI">15A</span> ＝ <span class="cP mark">1500W</span></p>
+    </div>
+    <div class="col" style="flex:1.2;">
+      <p class="sub" style="font-size:34px;margin-bottom:12px;">👆 使う家電をタップ</p>
+      <div class="apps" id="apps"></div>
+      <div class="meter"><div class="fill" id="mFill"></div><div class="limit" id="mLimit"></div></div>
+      <p class="readout" id="tapOut" style="font-size:38px;line-height:1.45;"></p>
+    </div>
+  </div>
+</section>
+
+<!-- 17 クイズ -->
+<section class="slide" data-title="クイズ">
+  <div style="display:flex;align-items:center;">
+    <span class="tag">QUIZ</span>
+    <div class="qdots" id="qdots"></div>
+  </div>
+  <h2 id="qText" style="margin-top:26px;font-size:62px;"></h2>
+  <div class="opts" id="qOpts"></div>
+  <p class="explain" id="qExp"></p>
+</section>
+
+<!-- 18 まとめ -->
+<section class="slide" data-title="まとめ">
+  <span class="tag">SUMMARY</span>
+  <h2>きょうのまとめ ✨</h2>
+  <div class="row" style="align-items:stretch;gap:28px;flex:none;">
+    <div class="col card pop" style="text-align:center;padding:26px 16px;"><p class="big cI">電流</p><p class="cI" style="font-family:Orbitron;">I [A]</p><p>流れる量</p></div>
+    <div class="col card pop" style="text-align:center;padding:26px 16px;"><p class="big cV">電圧</p><p class="cV" style="font-family:Orbitron;">V [V]</p><p>押し出す力</p></div>
+    <div class="col card pop" style="text-align:center;padding:26px 16px;"><p class="big cR">抵抗</p><p class="cR" style="font-family:Orbitron;">R [Ω]</p><p>流れにくさ</p></div>
+    <div class="col card pop" style="text-align:center;padding:26px 16px;"><p class="big cP">電力</p><p class="cP" style="font-family:Orbitron;">P [W]</p><p>仕事の大きさ</p></div>
+  </div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:90px;font-family:Orbitron;font-weight:900;font-size:110px;">
+    <div class="step"><span class="cV">V</span>=<span class="cI">I</span>×<span class="cR">R</span></div>
+    <div class="step"><span class="cP">P</span>=<span class="cV">V</span>×<span class="cI">I</span></div>
+  </div>
+  <p class="step" style="text-align:center;">電気は<span class="mark">計算して、安全に</span>使おう！ ⚡💧</p>
+</section>
+
+</div></div>
+
+<div id="ui"><div id="bar"></div></div>
+<span id="count"></span>
+<button class="nav" id="prev" aria-label="前へ">‹</button>
+<button class="nav" id="next" aria-label="次へ">›</button>
+<button class="nav" id="fs" aria-label="全画面">⛶</button>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const slides = [...document.querySelectorAll('.slide')];
+  const stage = $('#stage');
+  let cur = 0;
+
+  /* ---- 画面サイズに合わせる ---- */
+  function fit(){
+    const k = Math.min(innerWidth/1600, innerHeight/900);
+    stage.style.transform = `scale(${k})`;
+  }
+  addEventListener('resize', fit); fit();
+
+  /* ---- スライド移動（.step があれば1つずつ表示） ---- */
+  function show(i, revealAll){
+    cur = Math.max(0, Math.min(slides.length-1, i));
+    slides.forEach((s,j) => s.classList.toggle('active', j===cur));
+    slides[cur].querySelectorAll('.step').forEach(e => e.classList.toggle('shown', !!revealAll));
+    $('#bar').style.width = ((cur+1)/slides.length*100)+'%';
+    $('#count').textContent = String(cur+1).padStart(2,'0')+' / '+slides.length;
+    history.replaceState(null,'','#'+(cur+1));
+    const t = slides[cur].dataset.title;
+    if(t==='身近な家電のW') growBars();
+  }
+  function next(){
+    const hidden = slides[cur].querySelector('.step:not(.shown)');
+    if(hidden) hidden.classList.add('shown'); else if(cur<slides.length-1) show(cur+1);
+  }
+  function prev(){ if(cur>0) show(cur-1, true); }
+
+  addEventListener('keydown', e => {
+    if(['ArrowRight','ArrowDown','PageDown',' ','Enter'].includes(e.key)){ e.preventDefault(); next(); }
+    else if(['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(e.key)){ e.preventDefault(); prev(); }
+    else if(e.key==='Home') show(0);
+    else if(e.key==='End') show(slides.length-1, true);
+    else if(e.key==='f'||e.key==='F') toggleFs();
+  });
+  $('#next').onclick = next; $('#prev').onclick = prev;
+  // クリック後にボタンのフォーカスを外し、スペース／Enterでのスライド送りと干渉させない
+  document.addEventListener('click', e => e.target.closest('button')?.blur());
+  function toggleFs(){ document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.(); }
+  $('#fs').onclick = toggleFs;
+  // ボタン以外の場所をクリック → 右側で次へ・左側で前へ
+  document.getElementById('viewport').addEventListener('click', e => {
+    if(e.target.closest('button,a,input')) return;
+    (e.clientX > innerWidth*0.3) ? next() : prev();
+  });
+  // スワイプ
+  let sx=null;
+  addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, {passive:true});
+  addEventListener('touchend', e => {
+    if(sx===null) return; const dx = e.changedTouches[0].clientX - sx; sx=null;
+    if(Math.abs(dx)>60) dx<0 ? next() : prev();
+  });
+
+  /* ---- 回路実験 ---- */
+  const Vs=[1.5,3,6,9,12], Rs=[1,2,3,4,6,10];
+  let vi=2, ri=2, dash=0;
+  const fmt = n => (Math.round(n*100)/100).toString();
+  function zigzag(){ // 抵抗が大きいほどギザギザを細かく
+    const n = 4 + Rs[ri]; let d='M-90 0'; const w=180/n;
+    for(let k=0;k<n;k++) d += ` L${-90+w*(k+.5)} ${k%2?18:-18}`;
+    $('#zig').setAttribute('d', d+' L90 0');
+  }
+  function circ(){
+    const V=Vs[vi], R=Rs[ri], I=V/R, P=V*I;
+    $('#vOut').textContent=$('#batV').textContent=fmt(V)+'V';
+    $('#rOut').textContent=$('#resR').textContent=R+'Ω';
+    $('#iOut').textContent=fmt(I); $('#iCalc').textContent=`＝ ${fmt(V)} ÷ ${R}`;
+    $('#pOut').textContent=fmt(P);
+    const b = Math.min(1, P/40);
+    $('#bulbGlow').setAttribute('opacity', .1+b*.9);
+    $('#bulbGlow').setAttribute('r', 60+b*70);
+    $('#bulb').setAttribute('fill', b<.05 ? '#6b6040' : '#ffd23a');
+    zigzag();
+  }
+  document.querySelectorAll('.ctrl button').forEach(b => b.onclick = () => {
+    const d=+b.dataset.d;
+    if(b.dataset.k==='V') vi=Math.max(0,Math.min(Vs.length-1,vi+d));
+    else ri=Math.max(0,Math.min(Rs.length-1,ri+d));
+    circ();
+  });
+  let last=performance.now();
+  (function loop(t){
+    const dt=(t-last)/1000; last=t;
+    if(slides[cur].dataset.title==='回路で実験'){
+      dash -= (Vs[vi]/Rs[ri]) * 40 * dt;
+      $('#flowPath').setAttribute('stroke-dashoffset', dash);
+    }
+    requestAnimationFrame(loop);
+  })(last);
+  circ();
+
+  /* ---- ブリ三角 ---- */
+  const tri = {
+    V:['V = I × R','電圧 ＝ 電流 × 抵抗'],
+    I:['I = V ÷ R','電流 ＝ 電圧 ÷ 抵抗'],
+    R:['R = V ÷ I','抵抗 ＝ 電圧 ÷ 電流']
+  };
+  document.querySelectorAll('.tri-letter').forEach(b => b.onclick = () => {
+    const k=b.dataset.t;
+    document.querySelectorAll('.tri-letter').forEach(x => x.classList.toggle('hidden', x===b));
+    $('#triAns').innerHTML = tri[k][0].replace(/([VIR])/g, m => `<span class="c${m}">${m}</span>`);
+    $('#triWord').textContent = tri[k][1];
+  });
+
+  /* ---- 練習問題 ---- */
+  document.querySelectorAll('.reveal').forEach(b => b.onclick = () => {
+    b.classList.toggle('open');
+    b.textContent = b.classList.contains('open') ? b.dataset.a : 'こたえ';
+  });
+
+  /* ---- 家電の電力 ---- */
+  const home = [['📱 スマホ充電',10],['💡 LED電球',8],['📺 テレビ',100],['♨️ 電気ケトル',1250],['💨 ドライヤー',1200],['🍱 電子レンジ',1300]];
+  const maxW = 1300;
+  $('#bars').innerHTML = home.map(([n,w]) =>
+    `<div class="bar"><span>${n}</span><div class="track"><div class="fill" data-w="${w}"></div></div><span class="w">${w}W</span></div>`).join('');
+  function growBars(){
+    const fills = document.querySelectorAll('#bars .fill');
+    fills.forEach(f => f.style.width='0');
+    requestAnimationFrame(() => requestAnimationFrame(() =>
+      fills.forEach(f => f.style.width = Math.max(1.2, +f.dataset.w/maxW*100)+'%')));
+  }
+
+  /* ---- テーブルタップ ---- */
+  const apps = [['💨 ドライヤー',1200],['♨️ ケトル',1250],['🍱 レンジ',1300],['📺 テレビ',100],['📱 スマホ',10],['💡 LED電球',8]];
+  const on = new Set();
+  const SCALE = 3000;
+  $('#apps').innerHTML = apps.map(([n,w],i) => `<button class="app" data-i="${i}">${n}<small>${w}W</small></button>`).join('');
+  $('#mLimit').style.left = (1500/SCALE*100)+'%';
+  function tap(){
+    let W=0; on.forEach(i => W+=apps[i][1]);
+    const A = W/100;
+    const f=$('#mFill');
+    f.style.width = Math.min(100, W/SCALE*100)+'%';
+    f.style.background = W>1500 ? 'var(--red)' : W>1200 ? 'var(--yellow)' : 'var(--green)';
+    $('#tapOut').innerHTML =
+      `合計 <span class="cP" style="font-family:Orbitron">${W}W</span> → 電流 <span class="cI" style="font-family:Orbitron">${fmt(A)}A</span><br>` +
+      (W>1500 ? '<span class="danger">⚠ 15Aをこえた！ 発熱・火災の危険！</span>'
+              : W===0 ? '<span class="sub">I ＝ P ÷ V で電流を計算</span>' : '<span class="cP">✔ 1500W以内なのでOK</span>');
+  }
+  document.querySelectorAll('.app').forEach(b => b.onclick = () => {
+    const i=+b.dataset.i; on.has(i) ? on.delete(i) : on.add(i);
+    b.classList.toggle('on', on.has(i)); tap();
+  });
+  tap();
+
+  /* ---- クイズ ---- */
+  const quiz = [
+    {q:'電気の「流れにくさ」を表すのは？', o:['電流','電圧','抵抗','電力'], a:2, e:'抵抗 R［Ω］＝ 細いパイプのイメージ'},
+    {q:'水の「高さ（落差）」にたとえられるのは？', o:['電流','電圧','抵抗','電力'], a:1, e:'電圧 V［V］＝ 電気を押し出す力'},
+    {q:'電圧 12V、抵抗 4Ω のとき、電流は？', o:['3A','8A','16A','48A'], a:0, e:'I ＝ V ÷ R ＝ 12 ÷ 4 ＝ 3A'},
+    {q:'100V で 8A 流れる電子レンジの電力は？', o:['12.5W','92W','108W','800W'], a:3, e:'P ＝ V × I ＝ 100 × 8 ＝ 800W'},
+    {q:'1500Wまでのタップ。安全なのはどれ？', o:['ドライヤー＋ケトル','レンジ＋ケトル','ドライヤー＋テレビ','レンジ＋ドライヤー'], a:2, e:'1200 ＋ 100 ＝ 1300W で1500W以内！'}
+  ];
+  let qi=0;
+  $('#qdots').innerHTML = quiz.map((_,i)=>`<button data-i="${i}">${i+1}</button>`).join('');
+  function renderQ(){
+    const Q=quiz[qi];
+    $('#qText').textContent = 'Q'+(qi+1)+'. '+Q.q;
+    $('#qOpts').innerHTML = Q.o.map((t,i)=>`<button class="opt" data-i="${i}">${'ABCD'[i]}. ${t}</button>`).join('');
+    $('#qExp').textContent='';
+    document.querySelectorAll('#qdots button').forEach((b,i)=>b.classList.toggle('on',i===qi));
+    document.querySelectorAll('#qOpts .opt').forEach(b => b.onclick = () => {
+      const i=+b.dataset.i;
+      if(i===Q.a){
+        document.querySelectorAll('#qOpts .opt').forEach((x,j)=>{ if(j===Q.a) x.classList.add('ok'); });
+        $('#qExp').textContent = '⭕ せいかい！ ' + Q.e;
+      } else { b.classList.add('ng'); $('#qExp').textContent='❌ もう一度考えてみよう'; }
+    });
+  }
+  document.querySelectorAll('#qdots button').forEach(b => b.onclick = () => { qi=+b.dataset.i; renderQ(); });
+  renderQ();
+
+  /* ---- 開始 ---- */
+  const h = parseInt(location.hash.slice(1));
+  show(h>0 ? h-1 : 0);
+})();
+</script>
+</body>
+</html>
